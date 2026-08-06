@@ -148,10 +148,26 @@ contentEl.appendChild(placeholderEl);
 let tabs = [];
 let activeTabId = null;
 let browserInitialized = false;
+let headless = false;
+let trustedOrigin = null;
+
+function serializeTab(tab) {
+	return { id: tab.id, url: tab.url, title: tab.title, active: tab.id === activeTabId };
+}
+
+function notifyParent(type, extra = {}) {
+	if (!headless || window.parent === window) return;
+	window.parent.postMessage({ type, ...extra }, trustedOrigin || "*");
+}
+
+function notifyTabs() {
+	notifyParent("mi-proxy:tabs", { tabs: tabs.map(serializeTab) });
+}
 
 function showBrowserError(message) {
 	browserStatus.textContent = message;
 	browserStatus.hidden = false;
+	notifyParent("mi-proxy:error", { message });
 }
 
 function hideBrowserError() {
@@ -176,6 +192,7 @@ function renderTabBar() {
 		el.addEventListener("click", () => activateTab(tab.id));
 		tabsEl.appendChild(el);
 	}
+	notifyTabs();
 }
 
 function renderContentPlaceholder() {
@@ -248,13 +265,13 @@ async function activateTab(id) {
 	}
 }
 
-function createTab(saved, activate = true) {
+function createTab(saved, activate = true, persisted = false) {
 	const tab = {
 		id: saved?.id || crypto.randomUUID(),
 		url: saved?.url || null,
 		title: saved?.title || "New tab",
 		frame: null,
-		persisted: Boolean(saved),
+		persisted,
 	};
 	tabs.push(tab);
 	if (activate) activateTab(tab.id);
@@ -278,23 +295,28 @@ function closeTab(id) {
 	}
 }
 
+async function saveTab(tab) {
+	tab.persisted = true;
+	return fetch("/api/tabs", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ id: tab.id, url: tab.url, title: tab.title }),
+	});
+}
+
 async function syncTab(tab) {
 	if (!tab.url) return;
 	try {
-		if (tab.persisted) {
-			await fetch(`/api/tabs/${tab.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ url: tab.url, title: tab.title }),
-			});
-		} else {
-			tab.persisted = true;
-			await fetch("/api/tabs", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ id: tab.id, url: tab.url, title: tab.title }),
-			});
+		if (!tab.persisted) {
+			await saveTab(tab);
+			return;
 		}
+		const res = await fetch(`/api/tabs/${tab.id}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ url: tab.url, title: tab.title }),
+		});
+		if (res.status === 404) await saveTab(tab);
 	} catch {}
 }
 
@@ -330,7 +352,7 @@ async function initBrowserMode() {
 	if (saved.length === 0) {
 		createTab();
 	} else {
-		for (const entry of saved) createTab(entry, false);
+		for (const entry of saved) createTab(entry, false, true);
 		activateTab(tabs[0].id);
 	}
 }
@@ -379,27 +401,62 @@ transportButtons.forEach((btn) =>
 	}),
 );
 
-async function goEmbed(rawUrl) {
-	try {
-		await registerSW();
-		const cfg = await prepareConnection();
-		const url = search(rawUrl, cfg.defaultSearchEngine);
-		const frame = scramjet.createFrame();
-		frame.frame.id = "mp-frame";
-		document.body.appendChild(frame.frame);
-		frame.go(url);
-	} catch (err) {
-		document.body.innerHTML = `<pre style="color:#ff6b6b;padding:16px;white-space:pre-wrap;">${String(err)}</pre>`;
+function handleParentMessage(event) {
+	if (trustedOrigin && event.origin !== trustedOrigin) return;
+	const data = event.data;
+	if (!data || typeof data !== "object" || !String(data.type || "").startsWith("mi-proxy:")) return;
+
+	switch (data.type) {
+		case "mi-proxy:navigate": {
+			const tab = tabs.find((t) => t.id === activeTabId) || createTab(undefined, false);
+			if (tab.id !== activeTabId) activateTab(tab.id);
+			if (typeof data.url === "string") loadTabFrame(tab, data.url);
+			break;
+		}
+		case "mi-proxy:new-tab": {
+			createTab(typeof data.url === "string" ? { url: data.url } : undefined);
+			break;
+		}
+		case "mi-proxy:switch-tab":
+			if (typeof data.id === "string") activateTab(data.id);
+			break;
+		case "mi-proxy:close-tab":
+			if (typeof data.id === "string") closeTab(data.id);
+			break;
+		case "mi-proxy:list-tabs":
+			notifyTabs();
+			break;
+		case "mi-proxy:back":
+			tabs.find((t) => t.id === activeTabId)?.frame?.back();
+			break;
+		case "mi-proxy:forward":
+			tabs.find((t) => t.id === activeTabId)?.frame?.forward();
+			break;
+		case "mi-proxy:reload":
+			tabs.find((t) => t.id === activeTabId)?.frame?.reload();
+			break;
 	}
+}
+
+function initEmbedMode(initialUrl) {
+	headless = true;
+	const params = new URLSearchParams(location.search);
+	trustedOrigin = params.get("trustedOrigin") || null;
+
+	homeEl.remove();
+	browserEl.hidden = false;
+	browserEl.classList.add("mp-headless");
+
+	window.addEventListener("message", handleParentMessage);
+	if (initialUrl) createTab({ url: initialUrl });
+	notifyParent("mi-proxy:ready");
 }
 
 (function init() {
 	const params = new URLSearchParams(location.search);
 	const embedUrl = params.get("url");
-	if (embedUrl) {
-		homeEl.remove();
-		browserEl.remove();
-		goEmbed(embedUrl);
+	if (embedUrl || params.has("embed")) {
+		initEmbedMode(embedUrl || undefined);
 		return;
 	}
 	applyTransportUI();

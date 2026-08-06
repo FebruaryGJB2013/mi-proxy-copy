@@ -1,5 +1,10 @@
 # mi-proxy
 
+New here? [**GUIDE.md**](./GUIDE.md) is a beginner-friendly walkthrough —
+running it, using Basic/Browser mode, reskinning it, and embedding it in
+your own page (including switching tabs from the parent page). This README
+is the technical/API reference.
+
 A self-hosted, single-origin web proxy. It bundles everything a proxy site
 normally needs into one process:
 
@@ -99,7 +104,13 @@ and navigates straight there:
 <iframe src="https://your-mi-proxy.example/?url=https://example.com"></iframe>
 ```
 
-Without `url`, it behaves like any normal visit and shows the homepage.
+Without `url` (or `embed`), it behaves like any normal visit and shows the
+homepage.
+
+For full programmatic control — opening/switching/closing tabs from your
+own page's UI via `postMessage`, using `?embed` instead of `?url` — see
+["Embedding mi-proxy in your own page"](./GUIDE.md#5-embedding-mi-proxy-in-your-own-page)
+in the guide.
 
 ## REST API
 

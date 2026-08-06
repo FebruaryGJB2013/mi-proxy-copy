@@ -1,14 +1,31 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
+:root {
+	--mp-bg: #0d0d12;
+	--mp-bg-alt: #17171f;
+	--mp-accent: #7c5cff;
+	--mp-accent-hover: #6947f0;
+	--mp-text: #fff;
+	--mp-text-dim: rgba(255, 255, 255, 0.55);
+	--mp-border: rgba(255, 255, 255, 0.14);
+	--mp-panel: rgba(255, 255, 255, 0.06);
+	--mp-error: #ff6b6b;
+	--mp-font: "Inter", Arial, Helvetica, sans-serif;
+}
+
 * {
 	box-sizing: border-box;
 }
 
+[hidden] {
+	display: none !important;
+}
+
 body {
-	font-family: "Inter", Arial, Helvetica, sans-serif;
+	font-family: var(--mp-font);
 	margin: 0;
-	background: #0d0d12;
-	color: #fff;
+	background: var(--mp-bg);
+	color: var(--mp-text);
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
@@ -43,7 +60,7 @@ body {
 .desc p {
 	max-width: 520px;
 	text-align: center;
-	color: rgba(255, 255, 255, 0.55);
+	color: var(--mp-text-dim);
 	font-size: 14px;
 	line-height: 1.5;
 }
@@ -54,13 +71,13 @@ body {
 }
 
 #mp-address {
-	background: rgba(255, 255, 255, 0.06);
+	background: var(--mp-panel);
 	font-family: inherit;
 	font-size: 14px;
 	padding: 0 18px;
 	height: 46px;
-	border: 1px solid rgba(255, 255, 255, 0.14);
-	color: #fff;
+	border: 1px solid var(--mp-border);
+	color: var(--mp-text);
 	border-radius: 50px;
 	outline: none;
 	width: 360px;
@@ -68,7 +85,7 @@ body {
 }
 
 #mp-address:focus {
-	border-color: #7c5cff;
+	border-color: var(--mp-accent);
 }
 
 #mp-form button {
@@ -76,8 +93,8 @@ body {
 	padding: 0 22px;
 	border: none;
 	border-radius: 50px;
-	background: #7c5cff;
-	color: #fff;
+	background: var(--mp-accent);
+	color: var(--mp-text);
 	font-family: inherit;
 	font-weight: 600;
 	font-size: 14px;
@@ -86,11 +103,11 @@ body {
 }
 
 #mp-form button:hover {
-	background: #6947f0;
+	background: var(--mp-accent-hover);
 }
 
 #mp-status {
-	color: #ff6b6b !important;
+	color: var(--mp-error) !important;
 	white-space: pre-wrap;
 	text-align: center;
 }
@@ -108,7 +125,7 @@ body {
 	inset: 0;
 	width: 100vw;
 	height: 100vh;
-	background-color: #0d0d12;
+	background-color: var(--mp-bg);
 }
 
 footer {
@@ -138,13 +155,13 @@ footer span {
 
 footer a:hover {
 	text-decoration: underline;
-	color: #fff;
+	color: var(--mp-text);
 }
 
 .mode-toggle {
 	margin-top: 28px;
 	display: flex;
-	background: rgba(255, 255, 255, 0.06);
+	background: var(--mp-panel);
 	border-radius: 50px;
 	padding: 4px;
 	gap: 4px;
@@ -164,8 +181,8 @@ footer a:hover {
 }
 
 .mode-toggle button.active {
-	background: #7c5cff;
-	color: #fff;
+	background: var(--mp-accent);
+	color: var(--mp-text);
 }
 
 #mp-browser {
@@ -173,13 +190,20 @@ footer a:hover {
 	inset: 0;
 	display: flex;
 	flex-direction: column;
-	background: #0d0d12;
+	background: var(--mp-bg);
+}
+
+#mp-browser.mp-headless #mp-tabbar,
+#mp-browser.mp-headless #mp-toolbar,
+#mp-browser.mp-headless #mp-browser-status,
+#mp-browser.mp-headless .mp-tab-placeholder {
+	display: none !important;
 }
 
 #mp-tabbar {
 	display: flex;
 	align-items: center;
-	background: #17171f;
+	background: var(--mp-bg-alt);
 	padding: 8px 8px 0;
 	gap: 4px;
 	overflow-x: auto;
@@ -209,8 +233,8 @@ footer a:hover {
 }
 
 .mp-tab.active {
-	background: #0d0d12;
-	color: #fff;
+	background: var(--mp-bg);
+	color: var(--mp-text);
 }
 
 .mp-tab span {
@@ -237,8 +261,8 @@ footer a:hover {
 #mp-newtab {
 	flex-shrink: 0;
 	border: none;
-	background: rgba(255, 255, 255, 0.06);
-	color: #fff;
+	background: var(--mp-panel);
+	color: var(--mp-text);
 	width: 30px;
 	height: 30px;
 	border-radius: 8px 8px 0 0;
@@ -251,15 +275,15 @@ footer a:hover {
 	align-items: center;
 	gap: 8px;
 	padding: 8px;
-	background: #0d0d12;
+	background: var(--mp-bg);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #mp-toolbar button {
 	flex-shrink: 0;
 	border: none;
-	background: rgba(255, 255, 255, 0.06);
-	color: #fff;
+	background: var(--mp-panel);
+	color: var(--mp-text);
 	width: 34px;
 	height: 34px;
 	border-radius: 8px;
@@ -283,19 +307,19 @@ footer a:hover {
 
 #mp-browser-address {
 	width: 100%;
-	background: rgba(255, 255, 255, 0.06);
+	background: var(--mp-panel);
 	font-family: inherit;
 	font-size: 13px;
 	padding: 0 14px;
 	height: 34px;
-	border: 1px solid rgba(255, 255, 255, 0.14);
-	color: #fff;
+	border: 1px solid var(--mp-border);
+	color: var(--mp-text);
 	border-radius: 8px;
 	outline: none;
 }
 
 #mp-browser-address:focus {
-	border-color: #7c5cff;
+	border-color: var(--mp-accent);
 }
 
 #mp-browser-status {
@@ -316,7 +340,7 @@ footer a:hover {
 	width: 100%;
 	height: 100%;
 	border: none;
-	background: #0d0d12;
+	background: var(--mp-bg);
 }
 
 .mp-tab-placeholder {
