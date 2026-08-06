@@ -1,0 +1,11 @@
+services:
+  mi-proxy:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - SEARCH_ENGINE=https://www.google.com/search?q=%s
+      - WISP_ALLOW_UDP=true
+      - WISP_DNS_SERVERS=1.1.1.1,1.0.0.1
+    restart: unless-stopped

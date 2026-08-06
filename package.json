@@ -1,0 +1,29 @@
+{
+  "name": "mi-proxy",
+  "version": "1.0.0",
+  "description": "A self-hosted web proxy (built on Scramjet) with a built-in Wisp server, a REST API, and zero external services to configure.",
+  "type": "module",
+  "license": "GPL-3.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "proxy",
+    "web-proxy",
+    "scramjet",
+    "wisp"
+  ],
+  "dependencies": {
+    "@fastify/static": "^10.1.2",
+    "@mercuryworkshop/bare-mux": "^2.1.9",
+    "@mercuryworkshop/libcurl-transport": "^1.5.2",
+    "@mercuryworkshop/scramjet": "^1.1.0",
+    "@mercuryworkshop/wisp-js": "^0.4.1",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.7.4"
+  }
+}
