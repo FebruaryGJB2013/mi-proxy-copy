@@ -102,7 +102,7 @@ fastify.get("/api/health", async () => ({
 }));
 
 fastify.get("/api/config", async (request) => {
-	const host = request.headers.host;
+	const host = request.headers["x-forwarded-host"] || request.headers.host;
 	const proto = request.headers["x-forwarded-proto"] || request.protocol;
 	const wsProto = proto === "https" ? "wss" : "ws";
 	return {

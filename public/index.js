@@ -24,11 +24,9 @@ async function getConfig() {
 		const res = await fetch("/api/config");
 		config = await res.json();
 	} catch {
-		config = {
-			wispEndpoint: `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/wisp/`,
-			defaultSearchEngine: "https://www.google.com/search?q=%s",
-		};
+		config = { defaultSearchEngine: "https://www.google.com/search?q=%s" };
 	}
+	config.wispEndpoint = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/wisp/`;
 	return config;
 }
 
