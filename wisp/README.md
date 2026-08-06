@@ -24,6 +24,32 @@ handshake/extension-negotiation logic in `connection.js`.
 | `packet.js`      | Encode/decode for every packet type (CONNECT, DATA, CONTINUE, CLOSE, INFO) |
 | `dns.js`         | Resolves hostnames through `dns_servers` when configured (falls back to the OS resolver otherwise) |
 | `constants.js`   | Packet types, stream types, close reasons, extension IDs                |
+| `standalone.js`  | Runs this Wisp server on its own, with no proxy/frontend attached — see below |
+
+## Running it standalone
+
+`index.js` only exports the pieces (`server`, `logging`) meant to be wired
+into an existing HTTP server, the way `src/index.js` does for the rest of
+mi-proxy. `standalone.js` is a separate, minimal entry point that runs
+*just* the Wisp server on its own port, with no Fastify, no static
+frontend, nothing else:
+
+```sh
+npm run wisp
+# or, for auto-restart on file changes:
+npm run wisp:dev
+```
+
+It listens on `WISP_PORT` (default `8081`) and reads the same
+`WISP_ALLOW_UDP` / `WISP_HOSTNAME_BLACKLIST` / `WISP_DNS_SERVERS` /
+`WISP_LOG_LEVEL` variables from `.env` that the main app does. Any Wisp
+client can point at `ws://host:8081/` directly — the path doesn't matter to
+this server, it accepts any upgrade request.
+
+This is useful for running the tunnel as its own service (e.g. behind a
+different domain/port than the proxy frontend, or shared by multiple
+frontends), or for testing/developing the Wisp implementation in isolation
+without the rest of mi-proxy in the way.
 
 ## What's implemented
 

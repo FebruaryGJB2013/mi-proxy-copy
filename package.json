@@ -9,7 +9,9 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "dev": "node --watch src/index.js",
+    "wisp": "node wisp/standalone.js",
+    "wisp:dev": "node --watch wisp/standalone.js"
   },
   "keywords": [
     "proxy",
