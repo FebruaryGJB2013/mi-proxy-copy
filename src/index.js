@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hostname } from "node:os";
-import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
+import { server as wisp, logging } from "../wisp/index.js";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyCookie from "@fastify/cookie";
@@ -102,7 +102,7 @@ fastify.get("/api/health", async () => ({
 }));
 
 fastify.get("/api/config", async (request) => {
-	const host = request.headers.host;
+	const host = request.headers["x-forwarded-host"] || request.headers.host;
 	const proto = request.headers["x-forwarded-proto"] || request.protocol;
 	const wsProto = proto === "https" ? "wss" : "ws";
 	return {

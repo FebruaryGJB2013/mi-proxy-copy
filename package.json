@@ -25,8 +25,8 @@
     "@mercuryworkshop/epoxy-transport": "^3.0.1",
     "@mercuryworkshop/libcurl-transport": "^1.5.2",
     "@mercuryworkshop/scramjet": "^1.1.0",
-    "@mercuryworkshop/wisp-js": "^0.4.1",
     "dotenv": "^16.4.5",
-    "fastify": "^5.7.4"
+    "fastify": "^5.7.4",
+    "ws": "^8.21.2"
   }
 }
