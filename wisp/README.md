@@ -1,4 +1,10 @@
 # mi-wisp/
+## PLEASE DONT USE this
+
+### Instead use [The Updated and Safe version of mi-wispa](https://git.welltypers.it.com/Miguelqwe170/mi-wispa)
+
+#### This version is only meant for the PROXY and not meant for real wisp clients(most of them)
+
 
 A from-scratch [Wisp protocol](https://github.com/MercuryWorkshop/wisp-protocol)
 server, replacing the `@mercuryworkshop/wisp-js` dependency `src/index.js`
