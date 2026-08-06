@@ -112,6 +112,17 @@ body {
 	text-align: center;
 }
 
+.mp-retry-link {
+	color: var(--mp-accent);
+	cursor: pointer;
+	text-decoration: underline;
+	white-space: nowrap;
+}
+
+.mp-retry-link:hover {
+	color: var(--mp-accent-hover);
+}
+
 #mp-error-code {
 	font-size: 12px;
 	color: rgba(255, 255, 255, 0.6);

@@ -32,7 +32,7 @@ async function getConfig() {
 	return config;
 }
 
-function checkWispReachable(wispUrl, timeoutMs = 4000) {
+function attemptWispConnection(wispUrl, timeoutMs) {
 	return new Promise((resolve) => {
 		let settled = false;
 		let ws;
@@ -65,6 +65,13 @@ function checkWispReachable(wispUrl, timeoutMs = 4000) {
 	});
 }
 
+async function checkWispReachable(wispUrl, timeoutMs = 7000, attempts = 2) {
+	for (let i = 0; i < attempts; i++) {
+		if (await attemptWispConnection(wispUrl, timeoutMs)) return true;
+	}
+	return false;
+}
+
 function getTransportPreference() {
 	return localStorage.getItem("mp:transport") === "epoxy" ? "epoxy" : "libcurl";
 }
@@ -79,16 +86,32 @@ async function ensureTransport(wispEndpoint) {
 	transportReady = wispEndpoint;
 }
 
-async function prepareConnection() {
+async function prepareConnection({ skipCheck = false } = {}) {
 	const cfg = await getConfig();
-	const reachable = await checkWispReachable(cfg.wispEndpoint);
-	if (!reachable) {
-		throw new Error(
-			`Could not reach this proxy's own tunnel server at ${cfg.wispEndpoint}. If this is running behind a port-forwarding proxy (Codespaces, ngrok, etc.), make sure it forwards WebSocket connections.`,
-		);
+	if (!skipCheck) {
+		const reachable = await checkWispReachable(cfg.wispEndpoint);
+		if (!reachable) {
+			throw new Error(
+				`Could not reach this proxy's own tunnel server at ${cfg.wispEndpoint}. If this is running behind a port-forwarding proxy (Codespaces, ngrok, etc.), make sure it forwards WebSocket connections.`,
+			);
+		}
 	}
 	await ensureTransport(cfg.wispEndpoint);
 	return cfg;
+}
+
+function renderRetryLink(container, message, onRetry) {
+	container.innerHTML = "";
+	container.appendChild(document.createTextNode(message + " "));
+	const retry = document.createElement("a");
+	retry.href = "#";
+	retry.className = "mp-retry-link";
+	retry.textContent = "Try loading it anyway";
+	retry.addEventListener("click", (event) => {
+		event.preventDefault();
+		onRetry();
+	});
+	container.appendChild(retry);
 }
 
 const homeEl = document.getElementById("mp-home");
@@ -98,7 +121,7 @@ const status = document.getElementById("mp-status");
 const errorCode = document.getElementById("mp-error-code");
 const browserEl = document.getElementById("mp-browser");
 
-async function goBasic(rawInput) {
+async function goBasic(rawInput, { skipCheck = false } = {}) {
 	status.textContent = "";
 	errorCode.textContent = "";
 	try {
@@ -110,10 +133,10 @@ async function goBasic(rawInput) {
 	}
 	let cfg;
 	try {
-		cfg = await prepareConnection();
+		cfg = await prepareConnection({ skipCheck });
 	} catch (err) {
 		status.textContent = "Failed to connect to the proxy.";
-		errorCode.textContent = err.toString();
+		renderRetryLink(errorCode, err.message, () => goBasic(rawInput, { skipCheck: true }));
 		return;
 	}
 	const url = search(rawInput, cfg.defaultSearchEngine);
@@ -164,8 +187,15 @@ function notifyTabs() {
 	notifyParent("mi-proxy:tabs", { tabs: tabs.map(serializeTab) });
 }
 
-function showBrowserError(message) {
-	browserStatus.textContent = message;
+function showBrowserError(message, onRetry) {
+	if (onRetry) {
+		renderRetryLink(browserStatus, message, () => {
+			hideBrowserError();
+			onRetry();
+		});
+	} else {
+		browserStatus.textContent = message;
+	}
 	browserStatus.hidden = false;
 	notifyParent("mi-proxy:error", { message });
 }
@@ -224,7 +254,7 @@ function createTabFrame(tab) {
 	return frame;
 }
 
-async function loadTabFrame(tab, rawInput) {
+async function loadTabFrame(tab, rawInput, { skipCheck = false } = {}) {
 	try {
 		await registerSW();
 	} catch (err) {
@@ -233,9 +263,9 @@ async function loadTabFrame(tab, rawInput) {
 	}
 	let cfg;
 	try {
-		cfg = await prepareConnection();
+		cfg = await prepareConnection({ skipCheck });
 	} catch (err) {
-		showBrowserError(err.message);
+		showBrowserError(err.message, () => loadTabFrame(tab, rawInput, { skipCheck: true }));
 		return;
 	}
 	hideBrowserError();
