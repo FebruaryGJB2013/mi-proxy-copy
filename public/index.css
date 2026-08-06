@@ -140,3 +140,191 @@ footer a:hover {
 	text-decoration: underline;
 	color: #fff;
 }
+
+.mode-toggle {
+	margin-top: 28px;
+	display: flex;
+	background: rgba(255, 255, 255, 0.06);
+	border-radius: 50px;
+	padding: 4px;
+	gap: 4px;
+}
+
+.mode-toggle button {
+	border: none;
+	background: none;
+	color: rgba(255, 255, 255, 0.6);
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	padding: 6px 16px;
+	border-radius: 50px;
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+}
+
+.mode-toggle button.active {
+	background: #7c5cff;
+	color: #fff;
+}
+
+#mp-browser {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	background: #0d0d12;
+}
+
+#mp-tabbar {
+	display: flex;
+	align-items: center;
+	background: #17171f;
+	padding: 8px 8px 0;
+	gap: 4px;
+	overflow-x: auto;
+}
+
+#mp-tabs {
+	display: flex;
+	flex: 1;
+	gap: 4px;
+	min-width: 0;
+}
+
+.mp-tab {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 200px;
+	min-width: 120px;
+	padding: 8px 10px;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 8px 8px 0 0;
+	cursor: pointer;
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.6);
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.mp-tab.active {
+	background: #0d0d12;
+	color: #fff;
+}
+
+.mp-tab span {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mp-tab .mp-tab-close {
+	flex-shrink: 0;
+	opacity: 0.5;
+	border-radius: 4px;
+	width: 16px;
+	height: 16px;
+	line-height: 16px;
+	text-align: center;
+}
+
+.mp-tab .mp-tab-close:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.15);
+}
+
+#mp-newtab {
+	flex-shrink: 0;
+	border: none;
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	width: 30px;
+	height: 30px;
+	border-radius: 8px 8px 0 0;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+#mp-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	background: #0d0d12;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#mp-toolbar button {
+	flex-shrink: 0;
+	border: none;
+	background: rgba(255, 255, 255, 0.06);
+	color: #fff;
+	width: 34px;
+	height: 34px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 15px;
+}
+
+#mp-toolbar button:hover {
+	background: rgba(255, 255, 255, 0.14);
+}
+
+#mp-mode-switch {
+	width: auto !important;
+	padding: 0 14px;
+	font-size: 13px;
+}
+
+#mp-browser-form {
+	flex: 1;
+}
+
+#mp-browser-address {
+	width: 100%;
+	background: rgba(255, 255, 255, 0.06);
+	font-family: inherit;
+	font-size: 13px;
+	padding: 0 14px;
+	height: 34px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	color: #fff;
+	border-radius: 8px;
+	outline: none;
+}
+
+#mp-browser-address:focus {
+	border-color: #7c5cff;
+}
+
+#mp-browser-status {
+	background: #4a1f1f;
+	color: #ff9b9b;
+	font-size: 13px;
+	padding: 8px 16px;
+}
+
+#mp-content {
+	position: relative;
+	flex: 1;
+}
+
+.mp-tab-frame {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	background: #0d0d12;
+}
+
+.mp-tab-placeholder {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: rgba(255, 255, 255, 0.35);
+	font-size: 14px;
+}
