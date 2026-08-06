@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hostname } from "node:os";
-import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
+import { server as wisp, logging } from "../wisp/index.js";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyCookie from "@fastify/cookie";

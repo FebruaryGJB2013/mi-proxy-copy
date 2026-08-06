@@ -64,14 +64,15 @@ Most proxy setups need two things pointed at each other: the site itself,
 and a wisp server that the site's client-side code is hardcoded to talk to
 (often on its own subdomain). mi-proxy instead:
 
-1. Runs the wisp server (`@mercuryworkshop/wisp-js`) inside the same Node
-   process as the web server, handling the HTTP `upgrade` event on requests
-   to `/wisp/` (see `src/index.js`).
-2. Never hardcodes a wisp URL. The frontend asks `/api/config` for the
-   wisp endpoint, which the server builds from the incoming request's own
-   `Host` header (falling back to `location.host` client-side if the API
-   call fails). So whatever address you're using to reach the proxy is the
-   address the tunnel connects through too.
+1. Runs its own Wisp server (`wisp/`, a from-scratch implementation — see
+   below) inside the same Node process as the web server, handling the HTTP
+   `upgrade` event on requests to `/wisp/` (see `src/index.js`).
+2. Never hardcodes a wisp URL. The frontend always computes the wisp
+   endpoint itself from `location.protocol`/`location.host` — the one thing
+   guaranteed to match whatever address the browser is actually using to
+   reach the page, even behind a proxy that rewrites the `Host` header the
+   server sees (Codespaces, some tunnels). So whatever address you're using
+   to reach the proxy is the address the tunnel connects through too.
 
 This means deploying mi-proxy anywhere that gives you a single reachable
 address is enough — a VPS with just an IP, a `.local`/LAN hostname, a free
@@ -162,13 +163,25 @@ All settings are read from environment variables (see `.env.example`):
 ```
 src/index.js     Fastify server: static hosting, wisp mount, REST API
 public/          Frontend: address bar UI, service worker, Scramjet wiring
+wisp/            Wisp v1/v2 tunnel server (own implementation, see wisp/README.md)
 ```
+
+## The Wisp server
+
+`wisp/` is a from-scratch implementation of the
+[Wisp protocol](https://github.com/MercuryWorkshop/wisp-protocol) (both v1
+and v2 — it picks whichever a connecting client asks for), replacing the
+`@mercuryworkshop/wisp-js` dependency used earlier. It speaks the same
+packet protocol as any other Wisp server, so any Wisp-speaking client
+(Scramjet's bundled libcurl-transport/epoxy-transport, or anything else)
+works against it unmodified. See `wisp/README.md` for the protocol
+breakdown and design notes.
 
 ## Legal / attribution
 
 mi-proxy's proxying engine is [Scramjet](https://github.com/MercuryWorkshop/scramjet)
 by Mercury Workshop, used here as an npm dependency along with its
-`bare-mux`, `libcurl-transport`, `epoxy-transport`, and `wisp-js` companion
+`bare-mux`, `libcurl-transport`, and `epoxy-transport` companion
 packages. Those packages are licensed AGPL-3.0; this repository's own code
 is GPL-3.0 (see
 `LICENSE`). Running a modified version of this proxy as a network service

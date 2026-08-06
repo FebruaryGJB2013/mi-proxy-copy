@@ -1,66 +1,65 @@
-# wisp/ (planned)
+# wisp/
 
-This folder is reserved for a from-scratch Wisp server implementation to
-replace the current `@mercuryworkshop/wisp-js` dependency in `src/index.js`.
-Not implemented yet — this is a placeholder for that work.
+A from-scratch [Wisp protocol](https://github.com/MercuryWorkshop/wisp-protocol)
+server, replacing the `@mercuryworkshop/wisp-js` dependency `src/index.js`
+used to mount at `/wisp/`. Built specifically for mi-proxy: no extra
+dependency, smaller surface area, and nothing to configure beyond what
+`src/index.js` already exposes via `WISP_*` env vars.
 
-## Why
+Speaks both protocol versions and picks per-connection based on the
+[spec's rule](https://github.com/MercuryWorkshop/wisp-protocol/blob/v2/protocol.md#establishing-a-websocket-connection):
+v2 if the upgrade request carries a `Sec-WebSocket-Protocol` header, v1
+otherwise. Every Wisp client in the mi-proxy stack today (libcurl-transport,
+epoxy-transport) speaks v1, so that's the path that matters in practice —
+v2 support is there for forward compatibility and is exercised by the
+handshake/extension-negotiation logic in `connection.js`.
 
-`wisp-js` works, but it's a general-purpose reference implementation. The
-goal here is a Wisp server built specifically for mi-proxy: smaller, faster,
-and with less to configure, while staying wire-compatible with the
-[Wisp protocol](https://github.com/MercuryWorkshop/wisp-protocol) so it drops
-in wherever `wisp-js` is used today (`src/index.js`'s `/wisp/` mount, and any
-client that speaks Wisp — Scramjet, libcurl-transport, epoxy-transport, etc.).
+## Files
 
-## Target: Wisp v2
+| File            | Responsibility                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| `index.js`       | `WispServer` — options object, `routeRequest(req, socket, head)`, wraps a `ws.WebSocketServer` in `noServer` mode |
+| `connection.js`  | Per-WebSocket `WispConnection` — v1/v2 handshake, packet dispatch, stream table |
+| `stream.js`      | Per-stream `Stream` — TCP (`net`) / UDP (`dgram`) socket, buffering, flow control |
+| `packet.js`      | Encode/decode for every packet type (CONNECT, DATA, CONTINUE, CLOSE, INFO) |
+| `dns.js`         | Resolves hostnames through `dns_servers` when configured (falls back to the OS resolver otherwise) |
+| `constants.js`   | Packet types, stream types, close reasons, extension IDs                |
 
-Spec: https://github.com/MercuryWorkshop/wisp-protocol/blob/v2/protocol.md
+## What's implemented
 
-v2 adds a handshake (`INFO` packets exchanged before anything else) on top
-of v1's packet types, which is what makes the optional features below
-possible. A v2 server must still speak v1 to clients that don't send
-`Sec-WebSocket-Protocol` on the upgrade request.
+- Packet types: CONNECT, DATA, CONTINUE, CLOSE, INFO (v2 handshake)
+- v1 (immediate `CONTINUE(0)`) and v2 (`INFO` ↔ `INFO` ↔ `CONTINUE(0)`) handshakes
+- TCP and UDP streams, gated by `options.allow_udp_streams`
+- Flow control: per-stream `CONTINUE` credit on the client→server direction; server→client backpressure via pausing the source socket until the outgoing `ws.send()` callback fires
+- Buffering of `DATA` packets that arrive for a stream before its underlying
+  socket exists yet (explicitly allowed by the spec — clients are meant to
+  send optimistically without waiting for a connection to be confirmed)
+- Hostname blacklist (`options.hostname_blacklist`, an array of `RegExp`) → `CLOSE(0x48)`
+- Configurable DNS resolvers (`options.dns_servers`)
+- Close reasons: `UNREACHABLE`, `TIMEOUT`, `REFUSED`, `BLOCKED`, `INVALID_INFO`, `VOLUNTARY`, `NETWORK_ERROR`
+- v2 extensions: UDP presence, Stream Open Confirmation (server sends a
+  per-stream `CONTINUE` once the destination socket actually connects, if
+  both sides negotiated it)
 
-Packet types (same numbering in both versions):
+## Not implemented
 
-| Type | Name     | Purpose                                    |
-| ---- | -------- | ------------------------------------------- |
-| 0x01 | CONNECT  | Client opens a new TCP/UDP stream           |
-| 0x02 | DATA     | Payload for an open stream                  |
-| 0x03 | CONTINUE | Flow control / buffer credit                |
-| 0x04 | CLOSE    | Close a stream, with a reason code          |
-| 0x05 | INFO     | v2 only — handshake: versions + extensions  |
+- v2 password/key authentication and MOTD extensions — not needed for
+  mi-proxy's same-origin, no-public-wisp-domain design (see the main
+  README's "How 'no public domain' works" section), so left out rather than
+  built and unused. Would be straightforward to add in `connection.js`
+  following the same extension-negotiation pattern as Stream Open
+  Confirmation, if a use case shows up (e.g. gating a public deployment).
 
-v2 extensions worth targeting, roughly in priority order:
+## Testing notes
 
-1. **UDP (`0x01`)** — already required for parity with the current setup
-   (`WISP_ALLOW_UDP`).
-2. **Stream Open Confirmation (`0x05`)** — lets the client know a CONNECT
-   actually succeeded before it starts sending data.
-3. **Server MOTD (`0x04`)** — surfaced through `/api/config` or similar for
-   the frontend to show.
-4. **Password / key auth (`0x02`/`0x03`)** — only useful once mi-proxy wants
-   to gate its tunnel; not needed for the current same-origin, no-public-wisp-domain
-   design, so lowest priority.
+There's no automated test suite checked in yet. This was validated with:
 
-## Suggested shape
-
-```
-wisp/
-  server.js       Wisp v1 + v2 packet framing, CONNECT/DATA/CONTINUE/CLOSE handling
-  handshake.js    v2 INFO exchange, extension negotiation
-  extensions/
-    udp.js
-    motd.js
-  index.js        exports whatever src/index.js mounts at /wisp/
-```
-
-`src/index.js` would swap its
-`import { server as wisp } from "@mercuryworkshop/wisp-js/server"` for
-whatever this module ends up exporting, keeping the same `wisp.routeRequest(req, socket, head)`
-call shape so the rest of the server doesn't need to change.
-
-## Status
-
-Not started. Ping to kick off an implementation pass.
+- A raw WebSocket client script driving the packet protocol directly
+  (handshake, CONNECT/DATA/CLOSE, v1 and v2) against a local TCP echo server
+- The same against a local UDP echo server
+- Hostname blacklist and connection-refused paths, checking the specific
+  `CLOSE` reason codes
+- The real client stack end-to-end: a headless browser running the actual
+  Scramjet + libcurl-transport frontend code, unmodified, proxying to a
+  local HTTP origin server through this Wisp server and rendering the
+  response inside the proxied iframe
