@@ -1,8 +1,6 @@
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
-import { createRequire } from "node:module";
-import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hostname } from "node:os";
 import { server as wisp, logging } from "../wisp/index.js";
@@ -13,10 +11,8 @@ import fastifyCompress from "@fastify/compress";
 
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
+import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
-
-const require = createRequire(import.meta.url);
-const epoxyPath = dirname(require.resolve("@mercuryworkshop/epoxy-transport"));
 
 const publicPath = fileURLToPath(new URL("../public/", import.meta.url));
 const startedAt = Date.now();

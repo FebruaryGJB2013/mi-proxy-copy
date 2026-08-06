@@ -8,8 +8,7 @@ export function createResolver(dnsServers) {
 	return resolver;
 }
 
-export function resolveHost(resolver, hostname) {
-	if (net.isIP(hostname) || !resolver) return Promise.resolve(hostname);
+function resolveViaCustomServers(resolver, hostname) {
 	return new Promise((resolve, reject) => {
 		resolver.resolve4(hostname, (err4, addresses4) => {
 			if (!err4 && addresses4.length > 0) {
@@ -25,4 +24,23 @@ export function resolveHost(resolver, hostname) {
 			});
 		});
 	});
+}
+
+function resolveViaSystem(hostname) {
+	return new Promise((resolve, reject) => {
+		dns.lookup(hostname, (err, address) => {
+			if (err) reject(err);
+			else resolve(address);
+		});
+	});
+}
+
+export async function resolveHost(resolver, hostname) {
+	if (net.isIP(hostname)) return hostname;
+	if (!resolver) return resolveViaSystem(hostname);
+	try {
+		return await resolveViaCustomServers(resolver, hostname);
+	} catch {
+		return resolveViaSystem(hostname);
+	}
 }
