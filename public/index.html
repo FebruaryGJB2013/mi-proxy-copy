@@ -16,24 +16,51 @@
 	</head>
 
 	<body>
-		<div class="flex-center header-center">
+		<div id="mp-home" class="flex-center header-center">
 			<img class="logo" src="/favicon.svg" alt="mi-proxy" />
 			<h1>mi-proxy</h1>
-		</div>
-		<div class="flex-center desc left-margin">
-			<p>
-				A self-hosted web proxy. Everything &mdash; the site, the proxy engine, and its
-				tunnel server &mdash; runs from this one address. No separate wisp domain to set up.
-			</p>
+			<div class="desc left-margin">
+				<p>
+					A self-hosted web proxy. Everything &mdash; the site, the proxy engine, and its
+					tunnel server &mdash; runs from this one address. No separate wisp domain to set up.
+				</p>
+			</div>
+
+			<form id="mp-form" class="flex-center">
+				<input id="mp-address" type="text" placeholder="Search or enter a URL" autocomplete="off" />
+				<button type="submit">Go</button>
+			</form>
+			<div class="desc left-margin">
+				<p id="mp-status"></p>
+				<pre id="mp-error-code"></pre>
+			</div>
+
+			<div class="mode-toggle" role="group" aria-label="Browsing mode">
+				<button type="button" data-mode="basic" class="active">Basic</button>
+				<button type="button" data-mode="browser">Browser</button>
+			</div>
+			<div class="mode-toggle" role="group" aria-label="Network transport" id="mp-transport-toggle">
+				<button type="button" data-transport="libcurl" class="active">libcurl</button>
+				<button type="button" data-transport="epoxy">epoxy</button>
+			</div>
 		</div>
 
-		<form id="mp-form" class="flex-center">
-			<input id="mp-address" type="text" placeholder="Search or enter a URL" autocomplete="off" />
-			<button type="submit">Go</button>
-		</form>
-		<div class="desc left-margin">
-			<p id="mp-status"></p>
-			<pre id="mp-error-code"></pre>
+		<div id="mp-browser" hidden>
+			<div id="mp-tabbar">
+				<div id="mp-tabs"></div>
+				<button type="button" id="mp-newtab" title="New tab">+</button>
+			</div>
+			<div id="mp-toolbar">
+				<button type="button" id="mp-back" title="Back">&larr;</button>
+				<button type="button" id="mp-forward" title="Forward">&rarr;</button>
+				<button type="button" id="mp-reload" title="Reload">&#8635;</button>
+				<form id="mp-browser-form">
+					<input id="mp-browser-address" type="text" placeholder="Search or enter a URL" autocomplete="off" />
+				</form>
+				<button type="button" id="mp-mode-switch" title="Switch to basic mode">Basic</button>
+			</div>
+			<div id="mp-browser-status" hidden></div>
+			<div id="mp-content"></div>
 		</div>
 
 		<footer>

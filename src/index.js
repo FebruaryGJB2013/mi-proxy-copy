@@ -1,26 +1,26 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hostname } from "node:os";
 import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
+import fastifyCookie from "@fastify/cookie";
+import fastifyCompress from "@fastify/compress";
 
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
 import { baremuxPath } from "@mercuryworkshop/bare-mux/node";
 
+const require = createRequire(import.meta.url);
+const epoxyPath = dirname(require.resolve("@mercuryworkshop/epoxy-transport"));
+
 const publicPath = fileURLToPath(new URL("../public/", import.meta.url));
 const startedAt = Date.now();
 
-// --- Wisp server configuration -------------------------------------------
-// The Wisp server (which tunnels TCP/UDP over WebSocket for the proxy) is
-// mounted at /wisp/ on this SAME http server/origin below, instead of
-// pointing at some separately hosted public wisp instance. The frontend
-// (public/index.js) builds the wisp URL from `location.host` at runtime, so
-// whatever domain (or plain IP/port, e.g. http://localhost:8080) this app is
-// reached at is automatically also the wisp endpoint. No second domain, DNS
-// record, or external wisp provider is ever required.
 logging.set_level(process.env.WISP_LOG_LEVEL === "debug" ? logging.DEBUG : logging.NONE);
 
 Object.assign(wisp.options, {
@@ -40,7 +40,6 @@ const fastify = Fastify({
 	serverFactory: (handler) => {
 		return createServer()
 			.on("request", (req, res) => {
-				// Required for the proxy's service worker / wasm rewriter to run.
 				res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
 				res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 				handler(req, res);
@@ -55,34 +54,48 @@ const fastify = Fastify({
 	},
 });
 
-// --- Static assets ---------------------------------------------------------
+await fastify.register(fastifyCompress, { global: true });
+await fastify.register(fastifyCookie);
+
 fastify.register(fastifyStatic, {
 	root: publicPath,
 	decorateReply: true,
 });
 
-fastify.register(fastifyStatic, {
-	root: scramjetPath,
-	prefix: "/scram/",
-	decorateReply: false,
-});
+const vendorDirs = [
+	["/scram/", scramjetPath],
+	["/libcurl/", libcurlPath],
+	["/epoxy/", epoxyPath],
+	["/baremux/", baremuxPath],
+];
 
-fastify.register(fastifyStatic, {
-	root: libcurlPath,
-	prefix: "/libcurl/",
-	decorateReply: false,
-});
+for (const [prefix, root] of vendorDirs) {
+	fastify.register(fastifyStatic, {
+		root,
+		prefix,
+		decorateReply: false,
+		maxAge: "1d",
+	});
+}
 
-fastify.register(fastifyStatic, {
-	root: baremuxPath,
-	prefix: "/baremux/",
-	decorateReply: false,
-});
+const SESSION_COOKIE = "mp_sid";
+const sessions = new Map();
 
-// --- REST API ----------------------------------------------------------
-// Small JSON API for health checks, monitoring, and other apps that want to
-// discover how to reach this instance's proxy/wisp endpoints programmatically
-// instead of hardcoding them.
+function getSession(request, reply) {
+	let id = request.cookies[SESSION_COOKIE];
+	if (!id || !sessions.has(id)) {
+		id = randomUUID();
+		sessions.set(id, new Map());
+		reply.setCookie(SESSION_COOKIE, id, {
+			path: "/",
+			httpOnly: true,
+			sameSite: "lax",
+			maxAge: 60 * 60 * 24 * 30,
+		});
+	}
+	return sessions.get(id);
+}
+
 fastify.get("/api/health", async () => ({
 	status: "ok",
 	uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
@@ -97,7 +110,49 @@ fastify.get("/api/config", async (request) => {
 		wispEndpoint: `${wsProto}://${host}/wisp/`,
 		defaultSearchEngine: process.env.SEARCH_ENGINE || "https://www.google.com/search?q=%s",
 		udpEnabled: wisp.options.allow_udp_streams,
+		transports: {
+			libcurl: "/libcurl/index.mjs",
+			epoxy: "/epoxy/index.mjs",
+		},
 	};
+});
+
+fastify.get("/api/tabs", async (request, reply) => {
+	const tabs = getSession(request, reply);
+	return { tabs: [...tabs.values()] };
+});
+
+fastify.post("/api/tabs", async (request, reply) => {
+	const tabs = getSession(request, reply);
+	const { id, url, title } = request.body ?? {};
+	if (typeof url !== "string" || url.length === 0) {
+		return reply.code(400).send({ status: "error", message: "url is required" });
+	}
+	const tab = { id: typeof id === "string" && id.length > 0 ? id : randomUUID(), url, title: title || url, createdAt: Date.now() };
+	tabs.set(tab.id, tab);
+	return reply.code(201).send(tab);
+});
+
+fastify.put("/api/tabs/:id", async (request, reply) => {
+	const tabs = getSession(request, reply);
+	const tab = tabs.get(request.params.id);
+	if (!tab) return reply.code(404).send({ status: "error", message: "Tab not found" });
+	const { url, title } = request.body ?? {};
+	if (typeof url === "string" && url.length > 0) tab.url = url;
+	if (typeof title === "string" && title.length > 0) tab.title = title;
+	return tab;
+});
+
+fastify.delete("/api/tabs/:id", async (request, reply) => {
+	const tabs = getSession(request, reply);
+	tabs.delete(request.params.id);
+	return reply.code(204).send();
+});
+
+fastify.delete("/api/tabs", async (request, reply) => {
+	const tabs = getSession(request, reply);
+	tabs.clear();
+	return reply.code(204).send();
 });
 
 fastify.setNotFoundHandler((request, reply) => {
@@ -116,14 +171,13 @@ fastify.server.on("listening", () => {
 	console.log(
 		`  http://${address.family === "IPv6" ? `[${address.address}]` : address.address}:${address.port}`,
 	);
-	console.log("The Wisp server is mounted at /wisp/ on the same origin above — no separate domain needed.");
+	console.log("The Wisp server is mounted at /wisp/ on the same origin above.");
 });
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown() {
-	console.log("Shutting down mi-proxy...");
 	fastify.close();
 	process.exit(0);
 }
