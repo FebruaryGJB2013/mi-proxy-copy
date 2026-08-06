@@ -190,3 +190,5 @@ keeping your fork public on GitHub (or similar) satisfies that.
 
 Only run this against traffic and sites you're authorized to proxy, and
 follow the terms of service of whatever host you deploy it on.
+
+### this was made by the help of claude ofc i coded some of the stuff but it wont show since this was merged
