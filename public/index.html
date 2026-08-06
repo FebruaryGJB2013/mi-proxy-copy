@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+		<title>mi-proxy</title>
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+		<script src="/scram/scramjet.all.js"></script>
+		<script src="/baremux/index.js"></script>
+
+		<link rel="stylesheet" href="index.css" />
+		<script src="register-sw.js" defer></script>
+		<script src="search.js" defer></script>
+		<script src="index.js" defer></script>
+	</head>
+
+	<body>
+		<div class="flex-center header-center">
+			<img class="logo" src="/favicon.svg" alt="mi-proxy" />
+			<h1>mi-proxy</h1>
+		</div>
+		<div class="flex-center desc left-margin">
+			<p>
+				A self-hosted web proxy. Everything &mdash; the site, the proxy engine, and its
+				tunnel server &mdash; runs from this one address. No separate wisp domain to set up.
+			</p>
+		</div>
+
+		<form id="mp-form" class="flex-center">
+			<input id="mp-address" type="text" placeholder="Search or enter a URL" autocomplete="off" />
+			<button type="submit">Go</button>
+		</form>
+		<div class="desc left-margin">
+			<p id="mp-status"></p>
+			<pre id="mp-error-code"></pre>
+		</div>
+
+		<footer>
+			<div>
+				<a title="mi-proxy on GitHub" href="https://github.com/miguelqwe1701/mi-proxy">GitHub</a>
+				<a title="REST API docs" href="/api/config">API</a>
+				<a
+					title="Built on the Scramjet proxy engine by Mercury Workshop"
+					href="https://github.com/MercuryWorkshop/scramjet"
+					>Powered by Scramjet</a
+				>
+			</div>
+			<div>
+				<span>mi-proxy</span>
+			</div>
+		</footer>
+	</body>
+</html>
