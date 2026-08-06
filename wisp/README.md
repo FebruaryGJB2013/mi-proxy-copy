@@ -1,4 +1,4 @@
-# wisp/
+# mi-wisp/
 
 A from-scratch [Wisp protocol](https://github.com/MercuryWorkshop/wisp-protocol)
 server, replacing the `@mercuryworkshop/wisp-js` dependency `src/index.js`
